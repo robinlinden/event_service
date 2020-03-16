@@ -2,8 +2,8 @@
 
 #include <any>
 #include <functional>
-#include <map>
 #include <typeindex>
+#include <unordered_map>
 
 namespace gr8 {
 
@@ -34,7 +34,9 @@ public:
     }
 
 private:
-    std::multimap<std::type_index, std::function<void(std::any)>> handlers;
+    std::unordered_multimap<
+            std::type_index,
+            std::function<void(std::any)>> handlers;
 };
 
 } // namespace gr8
