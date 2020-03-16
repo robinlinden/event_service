@@ -27,22 +27,29 @@ struct third_event {
     std::string text;
 };
 
+static int strings_found;
+
 class best_class {
 public:
     best_class(
             gr8::event_service *srv,
-            const std::string &s) : valid_string(s) {
-        srv->subscribe<third_event>(this, &best_class::on_event);
+            const std::string &s) : srv_(srv), valid_string(s) {
+        token = srv->subscribe<third_event>(this, &best_class::on_event);
+    }
+
+    ~best_class() {
+        srv_->unsubscribe(token);
     }
 
     void on_event(const third_event &e) {
         if (e.text == valid_string) {
-            found_valid_string = true;
+            ++strings_found;
         }
     }
 
+    gr8::event_service *srv_;
+    gr8::subscription token;
     std::string valid_string;
-    bool found_valid_string = false;
 };
 
 } // namespace
@@ -62,18 +69,26 @@ int main() {
         return 1;
     }
 
-    best_class bc{&event_service, "hello"};
-    if (bc.found_valid_string) {
-        return 1;
-    }
+    {
+        best_class bc{&event_service, "hello"};
 
-    event_service.dispatch(third_event{"test"});
-    if (bc.found_valid_string) {
-        return 1;
+        if (strings_found != 0) {
+            return 1;
+        }
+
+        event_service.dispatch(third_event{"test"});
+        if (strings_found != 0) {
+            return 1;
+        }
+
+        event_service.dispatch(third_event{"hello"});
+        if (strings_found != 1) {
+            return 1;
+        }
     }
 
     event_service.dispatch(third_event{"hello"});
-    if (!bc.found_valid_string) {
+    if (strings_found != 1) {
         return 1;
     }
 

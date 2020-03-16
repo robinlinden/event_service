@@ -7,22 +7,29 @@
 
 namespace gr8 {
 
+struct subscription {
+    const void *handle{nullptr};
+};
+
 class event_service {
 public:
     template<typename EventT, typename HandlerT>
-    void subscribe(HandlerT &&h) {
+    subscription subscribe(HandlerT &&h) {
         const auto idx = std::type_index(typeid(EventT));
-        handlers.emplace(idx, [func = std::forward<HandlerT>(h)](auto val) {
+        auto it = handlers.emplace(idx, [func = std::forward<HandlerT>(h)](auto val) {
             func(std::any_cast<EventT>(val));
         });
+        return {&it->second};
     }
 
+
     template<typename EventT, typename ClassT, typename Method>
-    void subscribe(ClassT* instance, Method&& method) {
+    subscription subscribe(ClassT* instance, Method&& method) {
         const auto idx = std::type_index(typeid(EventT));
-        handlers.emplace(idx, [instance, method](auto value) {
+        auto it = handlers.emplace(idx, [instance, method](auto value) {
             (instance->*method)(std::any_cast<EventT>(value));
         });
+        return {&it->second};
     }
 
     template<typename EventT>
@@ -30,6 +37,15 @@ public:
         const auto idx = std::type_index(typeid(EventT));
         for(auto [id, last] = handlers.equal_range(idx); id != last; ++id) {
             id->second(std::any_cast<EventT>(event));
+        }
+    }
+
+    void unsubscribe(const subscription &s) {
+        for(auto it = handlers.begin(); it != handlers.end(); ++it) {
+            if (&it->second == s.handle) {
+                handlers.erase(it);
+                return;
+            }
         }
     }
 
