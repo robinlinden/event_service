@@ -8,7 +8,7 @@ struct my_event {
     int a;
 };
 
-void handle_event(const my_event &e) {
+void handle_event(const my_event &) {
     did_thing = true;
 }
 
@@ -32,7 +32,7 @@ public:
     best_class(
             gr8::event_service *srv,
             const std::string &s) : valid_string(s) {
-        srv->subscribe<third_event>(this, &on_event);
+        srv->subscribe<third_event>(this, &best_class::on_event);
     }
 
     void on_event(const third_event &e) {
